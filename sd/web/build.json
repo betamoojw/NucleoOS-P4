@@ -204,11 +204,11 @@
  ],
  "apps_dir": "apps",
  "base": "/",
- "bytes": 31192089,
+ "bytes": 31297886,
  "caps_row": {
   "since": "1.2.118"
  },
- "commit": "2d05afec0c3088f7718bcf79fc4b4bb2d4015dbc",
+ "commit": "ff8f2578a4466418d9278fb660b64f514ec87b8d",
  "edition": "p4",
  "externals": [
   {
@@ -523,11 +523,11 @@
    "why": "unRAR license is not free software: out until verified (external-resources.json)"
   }
  ],
- "files": 1375,
+ "files": 1381,
  "format": 1,
  "generator": "nucleo-webos tools/build.py",
- "gz_twins": 625,
- "hash": "1937d1bf3d0686d81c807610150e793f7bbc2ec7b13f6c84412f279f4f13566c",
+ "gz_twins": 628,
+ "hash": "f24cb997d414b8701586f9c6581d237644e7d514af197e9b1541d69650b5f4cc",
  "left_out": [
   {
    "id": "cast",
@@ -617,14 +617,14 @@
  },
  "profile_sha256": "1f68b9fa5f458ece4c6aeffe3cd99bde79ecbc24e72a2dac7c8ecd87041c85cc",
  "shell": {
-  "cache": "nucleo-shell-v163-ae2da43b7380",
-  "hash": "ae2da43b7380"
+  "cache": "nucleo-shell-v163-6ec58c150250",
+  "hash": "6ec58c150250"
  },
  "shell_dir": "",
  "uncommitted_files": 0,
  "webos": {
   "contract": "1",
-  "core": 3,
+  "core": 4,
   "webos": "1.0.0"
  }
 }

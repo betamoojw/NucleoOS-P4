@@ -23,7 +23,7 @@
     "de": 100
   },
   "surfaces": 42,
-  "totalKeys": 4294,
+  "totalKeys": 4358,
   "namespaces": {
     "agent": 161,
     "anima": 174,
@@ -36,7 +36,7 @@
     "clock": 18,
     "code-runner": 37,
     "contacts": 32,
-    "core": 179,
+    "core": 222,
     "dj": 32,
     "dos-importer": 53,
     "dosbox": 21,
@@ -55,7 +55,7 @@
     "radio": 56,
     "recorder": 107,
     "recycle-bin": 20,
-    "settings": 560,
+    "settings": 581,
     "shell": 437,
     "spreadsheet": 303,
     "ssh": 70,
