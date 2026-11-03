@@ -103,6 +103,11 @@ python nucleo_bridge.py --check [--report FILE]
   senza una composizione sua la riceve all'hook `/game/start`, prima che lo script di Popper avvii
   l'emulatore: il ponte la scrive nei file del tavolo solo quando è cambiata (`auto` in `s2.json`) e la toglie
   (file come in origine) quando si torna a "come in origine". Un tavolo con una scelta sua non viene toccato.
+- Le misure dei backglass (`b2s_info`) sono lette in anticipo a cabinato fermo, insieme alle grafiche FullDMD:
+  all'avvio di un tavolo l'hook scrive solo i file, senza leggere il `.directb2s` da 30-80 MB.
+- I punteggi disegnati dal ponte come DMD (`D`) non hanno conferma dalla scheda, che ogni tanto perde un byte
+  in ricezione USB e scarta il messaggio: l'ultima immagine è rimandata una volta dopo un secondo senza
+  cambiamenti, così un punteggio fermo non resta sbagliato.
 - Sono esclusi i tavoli nascosti (`Visible` diverso da 1). Preferiti: `PlayListDetails.isFav` = 1
   (playlist) o 2 (globali).
 - Prova senza cabinato: `python make_test_popper.py C:\temp\FakePUP --serve 8099` crea un finto Popper

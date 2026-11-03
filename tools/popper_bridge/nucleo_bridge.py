@@ -1410,6 +1410,7 @@ FP_DMD_RX = re.compile(rb"(?:[A-Za-z0-9_]\x00){0,30}[Dd]\x00[Mm]\x00[Dd]\x00(?:[
 # table's own CPU and GPU unchanged), the scaling done by GDI in that copy, and a message only when it changed.
 SCORE_W, SCORE_H = 256, 64
 SCORE_FPS = 8
+D_AGAIN_S = 1.0   # a 'D' picture sent once more after this long without a newer one (Link.send_d)
 _FD_K = 4   # display search at 1/4 size
 
 
@@ -1662,8 +1663,10 @@ def score_view(link, table, alive):
                 last = data
                 img = Image.frombuffer("RGBA", (SCORE_W, SCORE_H), data, "raw", "BGRA", 0, 1).convert("RGB")
                 px = zlib.compress(rgb565(img, SCORE_W, SCORE_H, (0, 0, 0)), 1)
-                if link.send("D", struct.pack("<H", len(head)) + head + px):
+                if link.send_d(struct.pack("<H", len(head)) + head + px):
                     sent += 1
+            else:
+                link.d_tick()
             time.sleep(max(0.02, 1.0 / SCORE_FPS - (time.time() - t)))
         log("score displays of %s: %d pictures sent" % (name, sent))
     finally:
@@ -1967,6 +1970,7 @@ class Link:
         self.urgent_q = queue.Queue()          # the board's quick requests (dispatch(), work())
         self.work_q = queue.PriorityQueue()    # the others: (priority, arrival, request)
         self.req_seq = 0                       # arrival order (only the reader counts)
+        self.d_last, self.d_again = None, 0.0  # the last 'D' picture, and when it goes once more (send_d)
 
     def find_port(self):
         if self.port_name:
@@ -2065,6 +2069,20 @@ class Link:
             return False
         finally:
             self.acks.pop(key, None)
+
+    def send_d(self, payload):
+        """A picture of the board's DMD drawn here ('D': the score displays). The board's USB receive loses a byte
+        now and then (a damaged message is dropped there: seen twice in 4 hours), 'D' gets no ack, and a lost one
+        would stay wrong on the board until the picture next changes (a score that does not move): so the last
+        one goes once more after D_AGAIN_S without a newer one (d_tick, in the sender's loop)."""
+        ok = self.send("D", payload)
+        self.d_last, self.d_again = (payload, time.time() + D_AGAIN_S) if ok else (None, 0.0)
+        return ok
+
+    def d_tick(self):
+        if self.d_last is not None and time.time() >= self.d_again:
+            p, self.d_last = self.d_last, None
+            self.send("D", p)
 
     def send_json(self, t, obj):
         return self.send(t, json.dumps(obj, ensure_ascii=False, separators=(",", ":")))
@@ -2562,7 +2580,9 @@ class Link:
     def prepare_fulldmd(self):
         """Once, in the background: convert the FullDMD picture of every table that has one, so a game start
         only reads a small file. Only while the cabinet is idle (no game, nobody using the board's menu for
-        5 minutes), one table every few seconds; the ones already in the cache cost a stat and a small read."""
+        5 minutes), one table every few seconds; the ones already in the cache cost a stat and a small read.
+        The backglass file's description too (b2s_info): every table's composition is written at the table's
+        start, inside Popper's hook, which waits 2 s at most; reading a 30-80 MB .directb2s there would not fit."""
         def idle():
             return not self.game and time.time() - self.last_q > 300
         time.sleep(60)
@@ -2581,6 +2601,7 @@ class Link:
                 b2s = self.popper.b2s_for(gid)
                 with self.idle_lock:   # never alongside the pictures being prepared ahead: one conversion at a time
                     if b2s:
+                        b2s_info(b2s)    # its sizes, for every table's composition (s2_follow)
                         b2s_grill(b2s)   # the backglass with its grill too (cached the same way)
                     if b2s and fulldmd(b2s):
                         done += 1

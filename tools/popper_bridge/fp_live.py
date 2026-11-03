@@ -444,8 +444,10 @@ def live(link, table, alive, log, find_displays, score_layout, ScreenCopy, rgb56
                     overlay.show(shown)
                 img = board_picture(cells, shown if n else vals[:len(cells)], bndig)
                 px = zlib.compress(rgb565(img, 256, 64, (0, 0, 0)), 1)
-                if link.send("D", struct.pack("<H", len(head)) + head + px):
+                if link.send_d(struct.pack("<H", len(head)) + head + px):
                     sent += 1
+            else:
+                link.d_tick()   # the last picture once more after a quiet second (a lost one put right)
             time.sleep(POLL_S)
     finally:
         if overlay:
