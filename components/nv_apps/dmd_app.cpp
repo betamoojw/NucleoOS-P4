@@ -138,6 +138,8 @@ NV_PSRAM_BSS bool s_rb_on = true;   // the running table rebuilds a 128x16 DMD (
 NV_PSRAM_BSS int s_col_lo = -1, s_col_hi = -1, s_col_w = 0, s_col_h = 0;
 NV_PSRAM_BSS int64_t s_col_t0 = 0;               // the first lit frame of them (display side only)
 NV_PSRAM_BSS volatile bool s_col_reset = false;  // tick: another game
+NV_PSRAM_BSS volatile bool s_pcf = false;        // the newest frame is a PC's, not the clock or the score
+                                                 // displays (only a PC's are counted: the display task sets it)
 NV_PSRAM_BSS volatile bool s_wide = false;       // set by the display task every round
 NV_PSRAM_BSS uint32_t *s_pxc = nullptr;          // the stretched frame (heap, PSRAM, w*h values, while needed)
 NV_PSRAM_BSS size_t s_pxc_cap = 0;
@@ -487,7 +489,7 @@ uint32_t layer_draw(void *, uint16_t *fb, int stride, bool fresh) {
             if (s_lit_lo < 0 || lo < s_lit_lo) s_lit_lo = lo;
             if (hi > s_lit_hi) s_lit_hi = hi;
         }
-        if (!test) {   // and the columns (side bands)
+        if (!test && s_pcf) {   // and the columns a PC lights (side bands)
             if (s_col_reset || w != s_col_w || h != s_col_h) {
                 s_col_reset = false;
                 s_col_w = w;
@@ -633,6 +635,8 @@ void disp_task(void *) {
         // "backglass only", where a PC frame gives way to the art)
         const bool test = s_test_on;
         const bool clock = !test && !strcmp(st.fmt, "clock");
+        // a PC's frames: the board's own pictures (the clock, the score displays) are drawn as they are
+        s_pcf = !test && !clock && strcmp(st.fmt, "score");
         const int fw = test ? kLocalW : st.w, fh = test ? kLocalH : st.h;
         const int64_t idle = in_game && !clock && !st.blank ? kIdleGameUs : kIdleUs;
         bool live = nv_dmd_latest() && st.last_frame_us && esp_timer_get_time() - st.last_frame_us < idle;
@@ -743,10 +747,9 @@ void disp_task(void *) {
             test_gen = s_test_gen;
             nv_disp_layer_update();
         }
-        // a PC's frames: the board's own pictures (the clock, the score displays) are drawn as they are
-        s_wide = wide_fit && strcmp(st.fmt, "clock") && strcmp(st.fmt, "score");
+        s_wide = wide_fit && s_pcf;
     }
-    s_wide = false;
+    s_wide = s_pcf = false;
     if (attached) nv_disp_layer_set(nullptr);
     amb_free();
     strips_free();
