@@ -43,6 +43,11 @@ constexpr int kBigS2W = 240, kBigPW = 272, kBigH = 160;
 constexpr int kAllTW = 176, kAllTH = 103;     // the cards when choosing for every table (a grid)
 constexpr int kTop = 138;                     // where a page starts (under the tabs and the pictures' lines)
 constexpr size_t kQCap = 512;                 // "dmd_s2q": the tables waiting for the cable (~100 ids)
+// A table's monitor: its own composition (DMD_S2_KEEP...), or every table's ("dmd_s2all": the bridge writes it
+// into the table's files when the table starts). Every table's is one of the first three: they need only the
+// backglass's size, which the bridge reads itself.
+constexpr int kS2Follow = -1;
+constexpr int kS2AllN = 3;                    // as it came, the backglass alone, the backglass above the DMD
 // The fits as the cards show them: the most useful first
 constexpr int kOrder[kNFit] = {kFitAuto, 6, 1, 5, 0, 2, 3, 4, 7, 8};
 constexpr uint16_t kStandIn = 0x2124;         // where a table's picture goes when there is none to show
@@ -74,9 +79,10 @@ struct Ui {
     lv_obj_t *s2dmd_lbl = nullptr, *s2row = nullptr, *fp_lbl = nullptr, *fpfull[2] = {};   // (Future Pinball)
     // this screen's page
     lv_obj_t *big_p = nullptr, *fname = nullptr, *desc = nullptr;
+    lv_obj_t *all_s2[kS2AllN] = {}, *all_s2_note = nullptr;   // every table: the monitor's choice
     lv_obj_t *dots[2] = {}, *marg[4] = {}, *rb[2] = {};
     Pic s2pic, ppic;
-    Card s2[DMD_S2_N], fit[kFits];
+    Card s2[DMD_S2_N + 1], fit[kFits];   // s2[0]: as every table, then each composition
     int gid = 0;                   // the table (0: every table)
     int pid = 0;                   // whose pictures the previews show (every table: the running or selected one)
     char name[64] = "";
@@ -211,11 +217,22 @@ bool s2_dmd_on(void) {
     return nv_config_get_int(k, 0) != 0;
 }
 
+// Every table's composition (kept here and by the bridge; "as it came" until chosen).
+int s2_all(void) {
+    const int v = nv_config_get_int("dmd_s2all", -1);
+    return v > 0 && v < kS2AllN ? v : DMD_S2_KEEP;
+}
+
+// The bridge follows every table's choice (its hello says which one it keeps; an older one has none).
+bool s2_all_known(void) { return dmd_menu_bridge_s2all() >= 0; }
+
+// The table's choice: its own composition, or kS2Follow (nothing of its own: "dmds2_<id>" 0).
 int cur_s2(void) {
     char k[24];
     snprintf(k, sizeof k, "dmds2_%d", s_ui->gid);
     const int v = nv_config_get_int(k, 0) - 1;
-    return v > 0 && v < DMD_S2_N ? v : DMD_S2_KEEP;
+    if (v < 0) return s2_all_known() ? kS2Follow : DMD_S2_KEEP;
+    return v < DMD_S2_N ? v : DMD_S2_KEEP;
 }
 
 dmd_s2_in_t s2_in(void) {
@@ -239,10 +256,19 @@ dmd_s2_in_t s2_in(void) {
     return in;
 }
 
+// What a choice comes to for this table: every table's when it has it (else as it came, as the bridge does).
+int s2_eff(int mode) {
+    if (mode != kS2Follow) return mode;
+    const dmd_s2_in_t in = s2_in();
+    return dmd_s2_avail(s2_all(), &in) ? s2_all() : DMD_S2_KEEP;
+}
+
 // The monitor with composition `mode`, into p (its shape). As it came: the backglass alone.
 void draw_s2(Pic &p, int mode) {
     Ui &u = *s_ui;
     memset(p.px, 0, (size_t)p.w * (size_t)p.h * 2);
+    const bool own = mode != kS2Follow;   // (every table's never adds the table's own DMD there)
+    mode = s2_eff(mode);
     const dmd_s2_in_t in = s2_in();
     dmd_s2_out_t o;
     if (!dmd_s2_layout(mode == DMD_S2_KEEP ? DMD_S2_BG : mode, &in, &o)) {
@@ -256,7 +282,7 @@ void draw_s2(Pic &p, int mode) {
     }
     if (o.art.w && u.art) put_img(p, u.art, dmd_rect_t{0, 0, kScrW, kScrH}, scaled(o.art, num, den));
     // the DMD there: only when it is on the monitor too ("backglass + DMD" is that by definition)
-    if (o.dmd.w && mode != DMD_S2_KEEP && (s2_dmd_on() || mode == DMD_S2_BG_DMD)) put_dmd(p, scaled(o.dmd, num, den), 0);
+    if (o.dmd.w && mode != DMD_S2_KEEP && ((own && s2_dmd_on()) || mode == DMD_S2_BG_DMD)) put_dmd(p, scaled(o.dmd, num, den), 0);
 }
 
 // ---- this screen
@@ -550,9 +576,13 @@ void redraw_s2(void) {
     }
     lv_obj_t *fp_objs[] = {u.fp_lbl, u.fpfull[0], u.fpfull[1]};
     for (lv_obj_t *o : fp_objs) show(o, false);
+    const int cur = cur_s2();
     lv_obj_t *b2s_objs[] = {u.s2dmd_lbl, u.s2dmd[0], u.s2dmd[1], u.s2row};
     for (lv_obj_t *o : b2s_objs) show(o, true);
-    const int cur = cur_s2();
+    if (cur == kS2Follow) {   // every table's choice says where the DMD goes: nothing to choose here
+        lv_obj_t *dmd_objs[] = {u.s2dmd_lbl, u.s2dmd[0], u.s2dmd[1]};
+        for (lv_obj_t *o : dmd_objs) show(o, false);
+    }
     if (u.s2pic.px) {
         draw_s2(u.s2pic, cur);
         refresh(u.big_s2);
@@ -562,26 +592,35 @@ void redraw_s2(void) {
             draw_s2(c.pic, c.what);
             refresh(c.img);
         }
-    mark(u.s2, DMD_S2_N, cur);
+    mark(u.s2, DMD_S2_N + 1, cur);
+    const bool follow = cur == kS2Follow;
+    const int eff = s2_eff(cur);
     char t[400];
     if (u.s2name) {
-        line_of(nv_tr(NV_STR_DMDC_S2_NAMES), cur, t, sizeof t);
+        if (follow) snprintf(t, sizeof t, "%s", nv_tr(NV_STR_DMDC_S2_FOLLOW));
+        else line_of(nv_tr(NV_STR_DMDC_S2_NAMES), cur, t, sizeof t);
         lv_label_set_text(u.s2name, t);
     }
     if (u.s2desc) {
         const DmdB2sInfo *in = info_of(u.gid);
-        if (in && !in->b2s) snprintf(t, sizeof t, "%s", nv_tr(NV_STR_DMDC_NO_B2S));
-        else line_of(nv_tr(NV_STR_DMDC_S2_DESCS), cur, t, sizeof t);
+        if (in && !in->b2s) {
+            snprintf(t, sizeof t, "%s", nv_tr(NV_STR_DMDC_NO_B2S));
+        } else if (follow) {   // every table's choice, and what it comes to here (as it came when it cannot have it)
+            char all[64], what[300];
+            line_of(nv_tr(NV_STR_DMDC_S2_ALL_NAMES), s2_all(), all, sizeof all);
+            line_of(nv_tr(NV_STR_DMDC_S2_DESCS), eff, what, sizeof what);
+            snprintf(t, sizeof t, nv_tr(NV_STR_DMDC_S2_FOLLOW_FMT), all, what);
+        } else {
+            line_of(nv_tr(NV_STR_DMDC_S2_DESCS), cur, t, sizeof t);
+        }
         lv_label_set_text(u.s2desc, t);
     }
-    pills_mark(u.s2dmd, 2, s2_dmd_on() ? 1 : 0);
-    // "as it came" writes nothing for the table: no DMD of ours to add there (the toggle would come back)
-    const bool keep = cur == DMD_S2_KEEP;
+    pills_mark(u.s2dmd, 2, (follow ? eff == DMD_S2_BG_DMD : s2_dmd_on()) ? 1 : 0);
+    // "as it came" writes nothing for the table: no DMD of ours to add there (the toggle would come back);
+    // every table's has its own DMD (or none)
+    const bool keep = cur == DMD_S2_KEEP || follow;
     for (lv_obj_t *o : u.s2dmd) pill_enable(o, !keep);
-    if (u.s2dmd_why) {
-        if (keep) lv_obj_remove_flag(u.s2dmd_why, LV_OBJ_FLAG_HIDDEN);
-        else lv_obj_add_flag(u.s2dmd_why, LV_OBJ_FLAG_HIDDEN);
-    }
+    show(u.s2dmd_why, cur == DMD_S2_KEEP);
     const DmdB2sInfo *in = info_of(u.gid);
     const bool dual = in && in->dual;
     lv_obj_t *dual_objs[] = {u.dual_lbl, u.dual[0], u.dual[1], u.dual_note};
@@ -659,10 +698,12 @@ void choose_s2(int mode) {
     Ui &u = *s_ui;
     char k[24], j[320];
     snprintf(k, sizeof k, "dmds2_%d", u.gid);
-    nv_config_set_int(k, mode + 1);
+    nv_config_set_int(k, mode + 1);   // (every table's: 0, nothing of its own)
     const dmd_s2_in_t in = s2_in();
     dmd_s2_out_t o;
-    if (mode != DMD_S2_KEEP && dmd_s2_layout(mode, &in, &o)) {
+    if (mode == kS2Follow) {   // nothing of its own: the bridge writes every table's (or puts it back as it came)
+        snprintf(j, sizeof j, "{\"q\":\"s2\",\"id\":%d,\"follow\":true}", u.gid);
+    } else if (mode != DMD_S2_KEEP && dmd_s2_layout(mode, &in, &o)) {
         char art[48] = "null", dmd[48] = "null";
         const bool dmd_there = s2_dmd_on() || mode == DMD_S2_BG_DMD;
         if (o.art.w) snprintf(art, sizeof art, "[%d,%d,%d,%d]", o.art.x, o.art.y, o.art.w, o.art.h);
@@ -716,7 +757,7 @@ void s2dmd_cb(lv_event_t *e) {
     char k[24];
     snprintf(k, sizeof k, "dmds2d_%d", s_ui->gid);
     nv_config_set_int(k, on ? 1 : 0);
-    if (cur_s2() != DMD_S2_KEEP) choose_s2(cur_s2());   // written again with or without it
+    if (cur_s2() > DMD_S2_KEEP) choose_s2(cur_s2());   // written again with or without it
     redraw_s2();
 }
 
@@ -972,8 +1013,41 @@ void build_s2_page(Ui &u, lv_obj_t *pg) {
     const int th = kS2TW * u.s2h / u.s2w;
     lv_obj_t *row = u.s2row = strip(pg, 238, th + 56);
     const dmd_s2_in_t in = s2_in();
+    if (s2_all_known()) card(u.s2[0], row, kS2TW, th, nv_tr(NV_STR_DMDC_S2_FOLLOW), kS2Follow, s2_cb);
     for (int m = 0; m < DMD_S2_N; m++)
-        if (dmd_s2_avail(m, &in)) card(u.s2[m], row, kS2TW, th, n[m] ? n[m] : "", m, s2_cb);
+        if (dmd_s2_avail(m, &in)) card(u.s2[m + 1], row, kS2TW, th, n[m] ? n[m] : "", m, s2_cb);
+}
+
+// Every table's monitor: the choice marked, what it means for the tables (or why it waits for the bridge).
+void redraw_all_s2(void) {
+    Ui &u = *s_ui;
+    pills_mark(u.all_s2, kS2AllN, s2_all());
+    if (u.all_s2_note) lv_label_set_text(u.all_s2_note, nv_tr(dmd_menu_bridge_s2all() == -1 ? NV_STR_DMDC_S2_ALL_OLD : NV_STR_DMDC_S2_PER_TABLE));
+}
+
+void all_s2_cb(lv_event_t *e) {
+    if (!s_ui) return;
+    const int mode = (int)(intptr_t)lv_event_get_user_data(e);
+    if (mode == s2_all() && nv_config_get_int("dmd_s2all", -1) >= 0) return;
+    nv_config_set_int("dmd_s2all", mode);
+    nv_log_write(NV_LOG_INFO, "dmd", "second screen of every table: %d", mode);
+    dmd_comp_flush();
+    redraw_all_s2();
+}
+
+// The row at x, y: its title, the three choices, the note under them.
+void all_s2_row(Ui &u, int x, int y) {
+    label(u.scr, &nv_font_20, kInk, nv_tr(NV_STR_DMDC_S2_ALL), x, y);
+    char names[160], *n[kS2AllN] = {};
+    snprintf(names, sizeof names, "%s", nv_tr(NV_STR_DMDC_S2_ALL_NAMES));
+    split(names, n, kS2AllN);
+    const int w = (kScrW - 20 - x - 2 * 8) / kS2AllN;
+    for (int m = 0; m < kS2AllN; m++)
+        u.all_s2[m] = pill(u.scr, n[m] ? n[m] : "", x + m * (w + 8), y + 28, w, all_s2_cb, (void *)(intptr_t)m);
+    u.all_s2_note = label(u.scr, &nv_font_14, kDim, "", x, y + 74);
+    lv_obj_set_size(u.all_s2_note, kScrW - 20 - x, 18);   // one line: the cards start under it
+    lv_label_set_long_mode(u.all_s2_note, LV_LABEL_LONG_DOT);
+    redraw_all_s2();
 }
 
 // This screen's page for a table: the lens, what the fit does, its dots, the fits.
@@ -1091,12 +1165,12 @@ bool dmd_comp_open_all(lv_obj_t *root, void (*on_close)(void)) {
     lens(u, u.scr, 20, 76);
     // the chosen fit: its name and what it does
     u.fname = label(u.scr, &nv_font_28, kInk, "", 20 + kBigPW + 24, 72);
-    u.desc = label(u.scr, &nv_font_20, kDim, "", 20 + kBigPW + 24, 116);
+    u.desc = label(u.scr, &nv_font_20, kDim, "", 20 + kBigPW + 24, 110);
     lv_obj_set_width(u.desc, kScrW - 20 - kBigPW - 24 - 20);
     lv_label_set_long_mode(u.desc, LV_LABEL_LONG_WRAP);
-    lv_obj_t *n = label(u.scr, &nv_font_14, kDim, nv_tr(NV_STR_DMDC_S2_PER_TABLE), 20 + kBigPW + 24, 212);
-    lv_obj_set_width(n, kScrW - 20 - kBigPW - 24 - 20);
-    lv_label_set_long_mode(n, LV_LABEL_LONG_WRAP);
+    lv_obj_set_height(u.desc, 27 * 2);   // two lines: the monitor's choice below
+    lv_label_set_long_mode(u.desc, LV_LABEL_LONG_DOT);
+    all_s2_row(u, 20 + kBigPW + 24, 172);
     // every fit as a card, in a grid (no scrolling: all of them in view)
     label(u.scr, &nv_font_20, kInk, nv_tr(NV_STR_DMDC_PANEL), 20, 248);
     lv_obj_t *grid = box(u.scr);
@@ -1135,8 +1209,9 @@ void dmd_comp_on_info(const DmdB2sInfo *info) {
         if (ids[i] == info->id) waiting = true;
     if (!waiting) {
         snprintf(k, sizeof k, "dmds2_%d", info->id);
-        const int have = nv_config_get_int(k, 0), want = info->s2 > 0 ? info->s2 + 1 : 1;
-        if (have != want && !(want == 1 && have == 0)) nv_config_set_int(k, want);
+        // (a bridge before s2all says nothing of every table: "as it came" there may be no choice at all)
+        const int have = nv_config_get_int(k, 0), want = !info->s2own ? 0 : info->s2 > 0 ? info->s2 + 1 : 1;
+        if (have != want && !(info->s2own < 0 && want == 1 && have == 0)) nv_config_set_int(k, want);
         snprintf(k, sizeof k, "dmds2d_%d", info->id);
         if ((nv_config_get_int(k, 0) != 0) != info->s2dmd) nv_config_set_int(k, info->s2dmd ? 1 : 0);
     }
@@ -1222,6 +1297,18 @@ void dmd_comp_tick(void) {
 }
 
 void dmd_comp_flush(void) {
+    // every table's monitor: to a bridge that keeps one, when it differs (a board that never chose takes the
+    // bridge's: another board's choice, or this one's before a reset of its settings)
+    const int br = dmd_menu_bridge_s2all();
+    if (br >= 0) {
+        if (nv_config_get_int("dmd_s2all", -1) < 0) {
+            nv_config_set_int("dmd_s2all", br < kS2AllN ? br : 0);
+        } else if (s2_all() != br) {
+            char j[48];
+            snprintf(j, sizeof j, "{\"q\":\"s2all\",\"mode\":%d}", s2_all());
+            if (!dmd_menu_send(j)) return;   // the cable is dmdext's: later
+        }
+    }
     int ids[128];   // read once: queue_edit below rewrites the queue while this goes through it
     const int n = queue_ids(ids, 128);
     for (int i = 0; i < n; i++) {
@@ -1235,6 +1322,19 @@ void dmd_comp_flush(void) {
         }
         if (!dmd_menu_send(j)) return;   // the cable is dmdext's: later
     }
+}
+
+void dmd_comp_on_all_result(int mode, bool ok, const char *err) {
+    if (ok) {
+        nv_toast(NV_NOTE_INFO, nv_tr(NV_STR_DMDC_SAVED));
+    } else {
+        char t[200];
+        snprintf(t, sizeof t, nv_tr(NV_STR_DMDC_FAIL_FMT), err ? err : "");
+        nv_toast(NV_NOTE_ERROR, t);
+    }
+    nv_log_write(ok ? NV_LOG_INFO : NV_LOG_WARN, "dmd", "second screen of every table: %d %s %s", mode,
+                 ok ? "kept by the bridge" : "refused:", ok ? "" : (err ? err : ""));
+    if (s_ui && s_ui->all) redraw_all_s2();
 }
 
 void dmd_comp_on_result(int game_id, bool ok, const char *err) {

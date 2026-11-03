@@ -465,7 +465,7 @@ cabinato. Si apre in tre modi:
 
 | Da dove | Cosa sceglie |
 |---|---|
-| Pannello → **Scegli con le anteprime** | La disposizione di **questo schermo** per **Tutti i tavoli**: le dieci disposizioni in una griglia, tutte in vista. Le anteprime usano le immagini del tavolo in gioco o di quello selezionato nel menu. |
+| Pannello → **Scegli con le anteprime** | La disposizione di **questo schermo** per **Tutti i tavoli**: le dieci disposizioni in una griglia, tutte in vista. Le anteprime usano le immagini del tavolo in gioco o di quello selezionato nel menu. Sopra la griglia, **Monitor di tutti i tavoli**: **Come in origine**, **Solo backglass** o **Backglass + DMD** per il monitor del PC di ogni tavolo che non ha una scelta sua (serve il ponte aggiornato sul PC). |
 | Scheda del tavolo → **Composizione** | Monitor del PC e questo schermo per **quel** tavolo, senza doverlo giocare |
 | Comandi rapidi → **Composizione di questo tavolo** | Lo stesso, per il tavolo in gioco; si apre sulla scheda **Questo schermo** |
 
@@ -497,6 +497,7 @@ gioco nel `DmdDevice.ini`), dopo averne fatto **una copia di sicurezza** con il 
 
 | Scelta | Sul monitor del PC |
 |---|---|
+| **Come tutti i tavoli** | La scelta **Monitor di tutti i tavoli** (Pannello → Scegli con le anteprime). È la scelta di partenza di ogni tavolo: il ponte la scrive nei file del tavolo quando il tavolo parte. Con **Solo backglass** il monitor mostra solo il backglass e il DMD resta su questa scheda |
 | **Come in origine** | Come lo dispone il file del backglass del tavolo (B2S), senza modifiche |
 | **Backglass** | Solo il backglass, su tutto il monitor |
 | **Backglass + DMD** | Il backglass in alto e il DMD sotto |

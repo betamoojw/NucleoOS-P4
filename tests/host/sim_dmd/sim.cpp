@@ -159,6 +159,10 @@ extern "C" bool nv_dmd_bridge_send(uint8_t type, const char *json) {
                  "\"ah\":1080,\"dual\":%s,\"dmdtype\":3,\"mode\":1,\"s2\":0,\"s2dmd\":false}", id,
                  id == 784 ? 2000 : 3000, id == 784 ? 1900 : 2915, id == 784 ? 330 : 820, id == 784 ? "true" : "false");
         push_json('R', r);
+    } else if (!strcmp(q, "s2all")) {   // every table's monitor: kept
+        char r[96];
+        snprintf(r, sizeof r, "{\"q\":\"s2all\",\"mode\":%d,\"ok\":true,\"err\":\"\"}", cJSON_GetObjectItem(o, "mode")->valueint);
+        push_json('R', r);
     } else if (!strcmp(q, "dual")) {
         char r[120];
         snprintf(r, sizeof r, "{\"q\":\"dual\",\"id\":%d,\"mode\":%d,\"ok\":true,\"err\":\"\"}", id,
@@ -333,7 +337,7 @@ static void comp_scenes(void) {
     dmd_menu_set_theme(0);
     dmd_menu_build(root, settings_cb);
     push_file("hello");
-    push_json('H', "{\"bridge\":\"1.1\",\"popper\":true,\"tables\":817,\"game\":null,\"ip\":\"192.168.1.60\",\"web\":80,\"s2\":[1366,0,1280,1024]}");
+    push_json('H', "{\"bridge\":\"1.1\",\"popper\":true,\"tables\":817,\"game\":null,\"ip\":\"192.168.1.60\",\"web\":80,\"s2\":[1366,0,1280,1024],\"s2all\":0}");
     run(4000);
     const int ids[2] = {811, 784};
     for (int id : ids) {
@@ -419,6 +423,9 @@ static void panel_scenes(void) {
     panel_layout_cb();   // "choose with previews"
     run(400);
     shot("layout_01_all");
+    tap(316 + 232 + 112, 218);   // the PC's monitor of every table: the backglass alone
+    run(300);
+    shot("layout_01b_all_monitor");
     tap(20 + 0 * 198 + 90, 276 + 60);   // the first card: the full-screen DMD
     run(300);
     shot("layout_02_fullscreen");
@@ -452,7 +459,7 @@ static void screens_scenes(void) {
     dmd_menu_set_theme(0);
     dmd_menu_build(root, settings_cb);
     push_file("hello");
-    push_json('H', "{\"bridge\":\"1.1\",\"popper\":true,\"tables\":817,\"game\":null,\"ip\":\"192.168.1.60\",\"web\":80,\"s2\":[1366,0,1280,1024]}");
+    push_json('H', "{\"bridge\":\"1.1\",\"popper\":true,\"tables\":817,\"game\":null,\"ip\":\"192.168.1.60\",\"web\":80,\"s2\":[1366,0,1280,1024],\"s2all\":0}");
     run(4000);
     shot("screens_00_card");
     const int ids[2] = {811, 784};

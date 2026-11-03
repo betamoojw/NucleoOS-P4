@@ -49,7 +49,7 @@ import urllib.parse
 import urllib.request
 import zlib
 
-VERSION = "1.1"
+VERSION = "1.2"
 MAGIC = b"NVDM"
 HOOK_PORT = 58090
 BOARD_VID_PID = (0x303A, 0x1001)          # Espressif USB-Serial-JTAG: the board's programming port
@@ -1274,6 +1274,47 @@ def s2_apply(b2s, ini, rom, comp, section=None):
     s2_vdmd(ini, section or rom, [v[0] + comp.get("x0", 0), v[1] + comp.get("y0", 0), v[2], v[3]] if v else None)
 
 
+# The compositions the bridge makes by itself, for the tables that follow the board's "every table" choice
+# (s2.json "all"): the ones that need only the backglass's size, as dmd_s2_layout (dmd_core.c) makes them.
+S2_ALL_MODES = (0, 1, 2)   # as the table came, the backglass alone, the backglass above the DMD
+S2_STRETCH = 16            # DMD_S2_STRETCH
+
+
+def s2_fit(w, h, box, stretch):
+    """s2_fit (dmd_core.c): a w x h picture in box [x, y, w, h], its shape kept and centred, or the whole box
+    when that stretches it by `stretch` % or less."""
+    x, y, bw, bh = box
+    rw, rh = bw, bh
+    if w < 1 or h < 1 or bw < 1 or bh < 1:
+        return [x, y, bw, bh]
+    if w * bh > h * bw:   # wider than the box: full width
+        rh = bw * h // w
+        if (bh - rh) * 100 <= bh * stretch:
+            rh = bh
+    else:
+        rw = bh * w // h
+        if (bw - rw) * 100 <= bw * stretch:
+            rw = bw
+    return [x + (bw - rw) // 2, y + (bh - rh) // 2, rw, rh]
+
+
+def s2_layout(mode, info, sw, sh, dw=128, dh=32):
+    """{"bg", "dmd"} of composition `mode` (1 or 2) on a sw x sh second screen, from b2s_info(); None when the
+    backglass has no picture to place (as dmd_s2_avail)."""
+    bw, bh, grill = int(info.get("bw") or 0), int(info.get("bh") or 0), int(info.get("grill") or 0)
+    if bw < 1 or bh <= grill or sw < 16 or sh < 16:
+        return None
+    if mode == 1:
+        return {"bg": s2_fit(bw, bh - grill, [0, 0, sw, sh], S2_STRETCH), "dmd": None}
+    if mode == 2:   # the DMD the whole width at its own shape, never over half the screen; the two centred
+        band = min(sw * dh // dw, sh // 2)
+        bg = s2_fit(bw, bh - grill, [0, 0, sw, sh - band], S2_STRETCH)
+        top = (sh - bg[3] - band) // 2
+        bg[1] = top
+        return {"bg": bg, "dmd": [0, top + bg[3], sw, band]}
+    return None
+
+
 def processes():
     """The running processes: [(name lower case, pid)]. One process list (Windows' tasklist: a fraction of a
     second), only at a game's start or end, or the bridge's start: never polled."""
@@ -2040,7 +2081,8 @@ class Link:
         except Exception:   # noqa: BLE001
             emus = []
         self.send_json("H", {"bridge": VERSION, "popper": ok, "tables": n, "game": self.game,
-                             "ip": lan_ip(), "web": self.popper.web_port, "emus": emus, "s2": self.s2})
+                             "ip": lan_ip(), "web": self.popper.web_port, "emus": emus, "s2": self.s2,
+                             "s2all": self.s2_all_mode()})
 
     # ---- requests from the board
     # Answered by two worker threads, not one thread per request: after a game the board sends many at once
@@ -2110,6 +2152,10 @@ class Link:
                 with S2_LOCK:
                     ok, err = self.apply_s2(r)
                 self.send_json("R", {"q": "s2", "id": r.get("id"), "ok": ok, "err": err})
+            elif q == "s2all":
+                with S2_LOCK:
+                    ok, err = self.set_s2_all(r)
+                self.send_json("R", {"q": "s2all", "mode": r.get("mode"), "ok": ok, "err": err})
             elif q == "b2sinfo":
                 with S2_LOCK:   # it may write s2.json (a table's names, b2s_names)
                     info = self.b2s_table(r)
@@ -2178,8 +2224,9 @@ class Link:
             with open(self.s2_store, encoding="utf-8") as f:
                 cur = json.load(f).get(str(gid), {})
             info["s2"], info["s2dmd"] = int(cur.get("mode", 0)), bool(cur.get("dmd"))
+            info["s2own"] = bool(cur)   # false: the table follows every table's composition
         except (OSError, ValueError):
-            info["s2"], info["s2dmd"] = 0, False
+            info["s2"], info["s2dmd"], info["s2own"] = 0, False, False
         return info
 
     def set_dual(self, r):
@@ -2194,20 +2241,14 @@ class Link:
         log("backglass version of %d: %s" % (gid, "fantasy" if int(r.get("mode") or 1) == 2 else "authentic"))
         return True, ""
 
-    def apply_s2(self, r):
-        """A table's composition for the second screen, from the board: written now, read by B2S and dmdext
-        when the table next starts. mode 0: the table as it came."""
-        gid = int(r.get("id") or 0)
+    def s2_target(self, gid, st):
+        """Where a table's composition is written: ((b2s, DmdDevice.ini, B2S's name, dmdext's section), "") or
+        (None, why). st: s2.json, which may gain the table's names (written here)."""
         b2s = self.popper.b2s_for(gid) if gid else None
         if not b2s:
-            return False, "no .directb2s"
+            return None, "no .directb2s"
         rows = self.popper.q("SELECT ROM FROM Games WHERE GameID = ?", (gid,))
         rom = (rows[0].get("ROM") or "").strip() if rows else ""
-        try:
-            with open(self.s2_store, encoding="utf-8") as f:
-                st = json.load(f)
-        except (OSError, ValueError):
-            st = {}
         section = rom
         if not rom:   # no ROM in Popper: the names from the table's script, once (then kept)
             names = st.get("names", {}).get(str(gid))
@@ -2219,10 +2260,34 @@ class Link:
                 log("table %d without a ROM: B2S %s, dmdext %s" % (gid, names[0], names[1]))
             rom, section = names
             if not rom:
-                return False, "no game name in the table"
+                return None, "no game name in the table"
         ini = os.path.join(os.path.dirname(self.popper.root), "VisualPinball", "VPinMAME", "DmdDevice.ini")
         if not os.path.isfile(ini):
-            return False, "no DmdDevice.ini"
+            return None, "no DmdDevice.ini"
+        return (b2s, ini, rom, section), ""
+
+    def s2_load(self):
+        try:
+            with open(self.s2_store, encoding="utf-8") as f:
+                st = json.load(f)
+            return st if isinstance(st, dict) else {}
+        except (OSError, ValueError):
+            return {}
+
+    def apply_s2(self, r):
+        """A table's composition for the second screen, from the board: written now, read by B2S and dmdext
+        when the table next starts. mode 0: the table as it came; follow: every table's (s2_follow)."""
+        gid = int(r.get("id") or 0)
+        st = self.s2_load()
+        if r.get("follow"):   # its own choice dropped: every table's from now (written now too)
+            st.pop(str(gid), None)
+            write_text(self.s2_store, json.dumps(st))
+            log("second screen of %d: as every table" % gid)
+            return self.s2_follow(gid)
+        t, err = self.s2_target(gid, st)
+        if not t:
+            return False, err
+        b2s, ini, rom, section = t
         mode = int(r.get("mode") or 0)
         if r.get("art") and b2s_dmdtype(b2s) not in (3, 4):
             return False, "this backglass opens no DMD window for the art"
@@ -2234,15 +2299,83 @@ class Link:
             s2_apply(b2s, ini, rom, {"bg": r["bg"], "grill": bool(r.get("grill")), "b2sdmd": r.get("art"),
                                      "vdmd": r.get("dmd"), "x0": self.s2[0], "y0": self.s2[1],
                                      "screen": [self.s2[2], self.s2[3]]}, section)
-        try:
-            with open(self.s2_store, encoding="utf-8") as f:
-                st = json.load(f)
-        except (OSError, ValueError):
-            st = {}
+        st = self.s2_load()
         st[str(gid)] = {"mode": mode, "dmd": bool(mode and r.get("dmd"))}
+        st.get("auto", {}).pop(str(gid), None)   # its own now
         write_text(self.s2_store, json.dumps(st))
         log("second screen of %d: composition %d %s" % (gid, mode, json.dumps({k: r.get(k) for k in ("bg", "art", "dmd")})))
         return True, ""
+
+    def s2_all_mode(self):
+        m = self.s2_load().get("all", {}).get("mode", 0)
+        return m if m in S2_ALL_MODES else 0
+
+    def set_s2_all(self, r):
+        """The board's composition for every table without one of its own (0 as it came, 1 the backglass
+        alone, 2 the backglass above the DMD): kept here, written into a table's files at its start (s2_follow)."""
+        mode = int(r.get("mode") or 0)
+        if mode not in S2_ALL_MODES:
+            return False, "no such composition for every table"
+        st = self.s2_load()
+        st["all"] = {"mode": mode}
+        write_text(self.s2_store, json.dumps(st))
+        log("second screen of every table: composition %d" % mode)
+        return True, ""
+
+    def s2_follow(self, gid):
+        """A table without a composition of its own gets every table's, written into its files when it differs
+        from what was written there last (s2.json "auto"; nothing at all for a table never touched while every
+        table's is "as it came"). Called at the table's start, before its emulator (Popper's hook waits for the
+        answer), and when the board gives a table back to every table's choice."""
+        st = self.s2_load()
+        if not gid or str(gid) in st:
+            return True, ""
+        want = self.s2_all_mode()
+        auto = st.get("auto", {})
+        have = int(auto.get(str(gid), 0))
+        if want == have:
+            return True, ""
+        t, err = self.s2_target(gid, st)
+        if not t:   # (a table without a .directb2s: its monitor is Popper's or the game's, nothing to write)
+            return (False, err) if want and t is None and err != "no .directb2s" else (True, "")
+        b2s, ini, rom, section = t
+        lay = None
+        if want:
+            if not self.s2:
+                return False, "no second screen"
+            lay = s2_layout(want, b2s_info(b2s), self.s2[2], self.s2[3])
+        if lay:
+            s2_apply(b2s, ini, rom, {"bg": lay["bg"], "grill": False, "b2sdmd": None, "vdmd": lay["dmd"],
+                                     "x0": self.s2[0], "y0": self.s2[1], "screen": [self.s2[2], self.s2[3]]}, section)
+        else:   # every table as it came (or this backglass has no picture to place): back as it was
+            s2_restore(b2s, ini, rom, section)
+        st = self.s2_load()   # (s2_target may have written the table's names)
+        auto = st.setdefault("auto", {})
+        if lay:
+            auto[str(gid)] = want
+        else:
+            auto.pop(str(gid), None)
+        write_text(self.s2_store, json.dumps(st))
+        log("second screen of %d: every table's composition %d%s" % (gid, want, "" if lay or not want else
+                                                                     " (no backglass picture to place: as it came)"))
+        return True, ""
+
+    def s2_on_start(self, names):
+        """Popper's start hook, before the table: its composition when it follows every table's."""
+        st = self.s2_load()
+        if not self.s2_all_mode() and not st.get("auto"):
+            return   # nothing for every table, nothing written by it before: no database look-up
+        for n in [names] if isinstance(names, str) else names:
+            try:
+                gid = self.popper.id_for_file(n) if n else None
+            except Exception:   # noqa: BLE001
+                return
+            if gid is not None:
+                with S2_LOCK:
+                    ok, err = self.s2_follow(gid)
+                if not ok:
+                    log("second screen of %d: every table's composition not written: %s" % (gid, err))
+                return
 
     def launch_later(self, gid, wait):
         """A table to start right after a game: Popper ignores a launch while it is still closing the last one
@@ -2294,11 +2427,11 @@ class Link:
             return False
 
     def vdmd_wanted(self, gid):
-        try:
-            with open(self.s2_store, encoding="utf-8") as f:
-                return bool(json.load(f).get(str(gid), {}).get("dmd"))
-        except (OSError, ValueError):
-            return False
+        st = self.s2_load()
+        own = st.get(str(gid))
+        if own is not None:
+            return bool(own.get("dmd"))
+        return int(st.get("auto", {}).get(str(gid), 0)) == 2   # every table's backglass above the DMD
 
     def image(self, r):
         from PIL import Image
@@ -2891,6 +3024,10 @@ def hook_server(link):
             u = urllib.parse.urlparse(self.path)
             qs = hook_query(u.query)
             if u.path == "/game/start":
+                try:   # before the answer: Popper's script waits for it, then starts the table
+                    link.s2_on_start(qs.get("name", [""]))
+                except Exception as e:   # noqa: BLE001
+                    log("second screen at the start:", e)
                 threading.Thread(target=link.game_start, args=(qs.get("name", [""]), qs.get("dmd", [""])[0] == "1"),
                                  daemon=True).start()
             elif u.path == "/game/end":

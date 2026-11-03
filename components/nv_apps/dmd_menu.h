@@ -57,6 +57,9 @@ bool dmd_menu_send(const char *json);
 void dmd_menu_send_fail_note(void);
 // The Popper bridge as its hello described it: false when no hello came since the app opened.
 bool dmd_menu_bridge_info(char *ver, size_t n, bool *popper_ok);
+// The composition for every table the bridge keeps (0..2, as dmd_comp's), from its last hello; -1 a bridge that
+// has none (older), -2 no hello yet since the board started.
+int dmd_menu_bridge_s2all(void);
 // Quit the running table over Wi-Fi and start it again once it has ended (a new composition then).
 void dmd_menu_quit_and_relaunch(void);
 // dmd_comp.cpp: the composition of both screens for the running table (the PC's second screen and this
@@ -79,6 +82,7 @@ struct DmdB2sInfo {
     int aw, ah;                // its FullDMD art (0: none): the second, smaller picture
     int mode;                  // the dual version in use: 1 Authentic, 2 Fantasy
     int s2;                    // the second screen's composition written for it (0: as it came)
+    int s2own;                 // 1 its own, 0 every table's (s2all), -1 not said (a bridge before s2all)
     bool s2dmd;                // with a DMD on the second screen too
     bool fp;                   // a Future Pinball table played with its backbox off: Popper's backglass picture
     int fpfull;                // ... on the whole monitor, drawn by the bridge (1), or where Popper shows it (0)
@@ -91,6 +95,7 @@ bool dmd_comp_is_open(void);
 void dmd_comp_tick(void);   // retries of what the screen waits for (from dmd_menu_tick)
 void dmd_comp_flush(void);
 void dmd_comp_on_result(int game_id, bool ok, const char *err);
+void dmd_comp_on_all_result(int mode, bool ok, const char *err);   // the bridge's answer to "s2all"
 // "Fit" is FullDMD: ask the bridge for that art as games start (told now and at every hello). LVGL thread.
 void dmd_menu_want_fulldmd(bool on);
 // The running table's Popper id (0: none).

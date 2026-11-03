@@ -464,7 +464,7 @@ It opens in three ways:
 
 | From | What it sets |
 |---|---|
-| Panel → **Choose with previews** | The layout of **this screen** for **Every table**: the ten layouts in a grid, all in view. The previews use the pictures of the running table, or of the one selected in the menu. |
+| Panel → **Choose with previews** | The layout of **this screen** for **Every table**: the ten layouts in a grid, all in view. The previews use the pictures of the running table, or of the one selected in the menu. Above the grid, **Monitor of every table**: **As it came**, **Backglass only** or **Backglass + DMD** for the PC's monitor of every table without a choice of its own (needs the updated bridge on the PC). |
 | Table card → **Composition** | The PC's monitor and this screen for **that** table, without playing it |
 | Quick actions → **Composition of this table** | The same, for the running table; it opens on the **This screen** tab |
 
@@ -494,6 +494,7 @@ dmdext read it when the table starts (the table's `.res` file, `B2STableSettings
 
 | Choice | On the PC's monitor |
 |---|---|
+| **As every table** | The **Monitor of every table** choice (Panel → Choose with previews). Every table starts with it: the bridge writes it into the table's files when the table starts. With **Backglass only** the monitor shows only the backglass and the DMD stays on this board |
 | **As it came** | As the table's backglass file (B2S) places it, nothing changed |
 | **Backglass** | Only the backglass, over the whole monitor |
 | **Backglass + DMD** | The backglass above and the DMD below it |

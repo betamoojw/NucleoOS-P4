@@ -472,7 +472,7 @@ Vous y choisissez, avec des aperçus faits à partir des vraies images de la tab
 
 | Depuis | Ce qu'il règle |
 |---|---|
-| Panneau → **Choisir avec les aperçus** | La disposition de **cet écran** pour **Toutes les tables** : les dix dispositions dans une grille, toutes visibles. Les aperçus utilisent les images de la table en cours, ou de celle sélectionnée dans le menu. |
+| Panneau → **Choisir avec les aperçus** | La disposition de **cet écran** pour **Toutes les tables** : les dix dispositions dans une grille, toutes visibles. Les aperçus utilisent les images de la table en cours, ou de celle sélectionnée dans le menu. Au-dessus de la grille, **Moniteur de toutes les tables** : **D'origine**, **Backglass seul** ou **Backglass + DMD** pour le moniteur du PC de chaque table sans choix propre (il faut le pont à jour sur le PC). |
 | Fiche de la table → **Composition** | Le moniteur du PC et cet écran pour **cette** table, sans avoir à la jouer |
 | Actions rapides → **Composition de la table** | La même chose, pour la table en cours ; il s'ouvre sur l'onglet **Cet écran** |
 
@@ -504,6 +504,7 @@ jeu dans le `DmdDevice.ini`), après avoir fait **une copie de sauvegarde** de c
 
 | Choix | Sur le moniteur du PC |
 |---|---|
+| **Comme toutes les tables** | Le choix **Moniteur de toutes les tables** (Panneau → Choisir avec les aperçus). Chaque table commence avec lui : le pont l'écrit dans les fichiers de la table quand elle démarre. Avec **Backglass seul** le moniteur ne montre que le backglass et le DMD reste sur cette carte |
 | **D'origine** | Comme le place le fichier du backglass de la table (B2S), sans changement |
 | **Backglass** | Seulement le backglass, sur tout le moniteur |
 | **Backglass + DMD** | Le backglass en haut et le DMD dessous |

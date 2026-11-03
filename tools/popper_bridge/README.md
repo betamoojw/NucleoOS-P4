@@ -98,6 +98,11 @@ python nucleo_bridge.py --check [--report FILE]
   ha il nome mostrato (`name`, in italiano) e una chiave fissa ASCII (`key`: `vpx`, `fp`, `fx`, `shooter`,
   `maze`, `platform`, `sport`, `arcade`, `pc`) per tradurla sulla scheda. In `categories.json` si può dare
   `key`; senza, è il nome senza accenti in minuscolo.
+- Monitor del PC per tutti i tavoli (dalla versione 1.2 del ponte): la scheda manda la scelta (`s2all`:
+  0 come in origine, 1 solo backglass, 2 backglass + DMD) e il ponte la tiene in `s2.json` (`all`). Un tavolo
+  senza una composizione sua la riceve all'hook `/game/start`, prima che lo script di Popper avvii
+  l'emulatore: il ponte la scrive nei file del tavolo solo quando è cambiata (`auto` in `s2.json`) e la toglie
+  (file come in origine) quando si torna a "come in origine". Un tavolo con una scelta sua non viene toccato.
 - Sono esclusi i tavoli nascosti (`Visible` diverso da 1). Preferiti: `PlayListDetails.isFav` = 1
   (playlist) o 2 (globali).
 - Prova senza cabinato: `python make_test_popper.py C:\temp\FakePUP --serve 8099` crea un finto Popper

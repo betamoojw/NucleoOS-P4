@@ -467,7 +467,7 @@ máquina. Se abre de tres maneras:
 
 | Desde | Qué elige |
 |---|---|
-| Panel → **Elegir con vistas previas** | La disposición de **esta pantalla** para **Todas las mesas**: las diez disposiciones en una cuadrícula, todas a la vista. Las vistas previas usan las imágenes de la mesa en juego o de la seleccionada en el menú. |
+| Panel → **Elegir con vistas previas** | La disposición de **esta pantalla** para **Todas las mesas**: las diez disposiciones en una cuadrícula, todas a la vista. Las vistas previas usan las imágenes de la mesa en juego o de la seleccionada en el menú. Encima de la cuadrícula, **Monitor de todas las mesas**: **Como venía**, **Solo backglass** o **Backglass + DMD** para el monitor del PC de cada mesa sin una elección propia (hace falta el puente actualizado en el PC). |
 | Ficha de la mesa → **Composición** | El monitor del PC y esta pantalla para **esa** mesa, sin tener que jugarla |
 | Acciones rápidas → **Composición de la mesa** | Lo mismo, para la mesa en juego; se abre en la pestaña **Esta pantalla** |
 
@@ -497,6 +497,7 @@ el `DmdDevice.ini`), después de hacer **una copia de seguridad** de cada archiv
 
 | Opción | En el monitor del PC |
 |---|---|
+| **Como todas las mesas** | La elección **Monitor de todas las mesas** (Panel → Elegir con vistas previas). Cada mesa empieza con ella: el puente la escribe en los archivos de la mesa cuando la mesa arranca. Con **Solo backglass** el monitor muestra solo el backglass y el DMD se queda en esta placa |
 | **Como venía** | Como lo coloca el archivo del backglass de la mesa (B2S), sin cambios |
 | **Backglass** | Solo el backglass, en todo el monitor |
 | **Backglass + DMD** | El backglass arriba y el DMD debajo |

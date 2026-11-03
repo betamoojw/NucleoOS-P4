@@ -470,7 +470,7 @@ Automaten nutzt. Er öffnet sich auf drei Wegen:
 
 | Von wo | Was er festlegt |
 |---|---|
-| Einstellungsfeld → **Mit Vorschau wählen** | Die Anordnung **dieses Bildschirms** für **Alle Tische**: die zehn Anordnungen in einem Raster, alle sichtbar. Die Vorschauen nutzen die Bilder des laufenden oder des im Menü gewählten Tisches. |
+| Einstellungsfeld → **Mit Vorschau wählen** | Die Anordnung **dieses Bildschirms** für **Alle Tische**: die zehn Anordnungen in einem Raster, alle sichtbar. Die Vorschauen nutzen die Bilder des laufenden oder des im Menü gewählten Tisches. Über dem Raster, **Monitor aller Tische**: **Wie geliefert**, **Nur Backglass** oder **Backglass + DMD** für den PC-Monitor jedes Tisches ohne eigene Wahl (braucht die aktuelle Brücke auf dem PC). |
 | Tischkarte → **Komposition** | Monitor des PCs und dieser Bildschirm für **diesen** Tisch, ohne ihn spielen zu müssen |
 | Schnellaktionen → **Komposition des Tisches** | Dasselbe für den laufenden Tisch; öffnet sich auf dem Reiter **Dieser Bildschirm** |
 
@@ -501,6 +501,7 @@ angelegt hat.
 
 | Wahl | Auf dem Monitor des PCs |
 |---|---|
+| **Wie alle Tische** | Die Wahl **Monitor aller Tische** (Einstellungsfeld → Mit Vorschau wählen). Jeder Tisch beginnt damit: Die Brücke schreibt sie beim Start des Tisches in seine Dateien. Mit **Nur Backglass** zeigt der Monitor nur das Backglass, und das DMD bleibt auf dieser Platine |
 | **Wie geliefert** | Wie die Backglass-Datei des Tisches (B2S) es anordnet, unverändert |
 | **Backglass** | Nur das Backglass, auf dem ganzen Monitor |
 | **Backglass + DMD** | Das Backglass oben und der DMD darunter |

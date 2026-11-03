@@ -326,6 +326,8 @@ NV_PSRAM_BSS bool s_hello;                    // the bridge said hello since the
 NV_PSRAM_BSS int64_t s_hello_ask_us;          // when the board last asked for it
 NV_PSRAM_BSS char s_bridge_ver[16];           // the hello's bridge version and whether Popper's database opened
 NV_PSRAM_BSS bool s_popper_ok;
+NV_PSRAM_BSS int s_bridge_s2all = -2;          // the hello's composition for every table (-1: none, an older bridge;
+                                                // -2: no hello yet since the board started)
 NV_PSRAM_BSS bool s_want_full;                // "Fit" is FullDMD: the bridge sends that art as a game starts
 NV_PSRAM_BSS bool s_want_list;
 NV_PSRAM_BSS bool s_visible;
@@ -3104,6 +3106,8 @@ void handle(uint8_t type, uint8_t *data, uint32_t len) {
                 snprintf(t, sizeof t, "%d,%d,%d,%d", v[0], v[1], v[2], v[3]);
                 nv_config_set_str("dmd_s2", t);
             }
+            const cJSON *all = cJSON_GetObjectItem(o, "s2all");
+            s_bridge_s2all = cJSON_IsNumber(all) ? all->valueint : -1;
             if (jint(o, "web") && jint(o, "web") != s_pc_web) {
                 s_pc_web = jint(o, "web");
                 nv_config_set_int("dmd_pc_web", s_pc_web);
@@ -3136,6 +3140,10 @@ void handle(uint8_t type, uint8_t *data, uint32_t len) {
             }
         } else if (o && !strcmp(jstr(o, "q"), "s2")) {
             dmd_comp_on_result(jint(o, "id"), cJSON_IsTrue(cJSON_GetObjectItem(o, "ok")), jstr(o, "err"));
+        } else if (o && !strcmp(jstr(o, "q"), "s2all")) {
+            const bool ok = cJSON_IsTrue(cJSON_GetObjectItem(o, "ok"));
+            if (ok) s_bridge_s2all = jint(o, "mode");
+            dmd_comp_on_all_result(jint(o, "mode"), ok, jstr(o, "err"));
         } else if (o && !strcmp(jstr(o, "q"), "b2sinfo")) {   // what a table's backglass file holds
             DmdB2sInfo i{};
             i.id = jint(o, "id");
@@ -3149,6 +3157,8 @@ void handle(uint8_t type, uint8_t *data, uint32_t len) {
             i.mode = jint(o, "mode");
             i.s2 = jint(o, "s2");
             i.s2dmd = cJSON_IsTrue(cJSON_GetObjectItem(o, "s2dmd"));
+            const cJSON *own = cJSON_GetObjectItem(o, "s2own");
+            i.s2own = cJSON_IsBool(own) ? (cJSON_IsTrue(own) ? 1 : 0) : -1;
             i.fp = cJSON_IsTrue(cJSON_GetObjectItem(o, "fp"));
             i.fpfull = jint(o, "fpfull");
             dmd_comp_on_info(&i);
@@ -3981,6 +3991,8 @@ void dmd_menu_comp_fetch(int id) {
     s_comp_want = id;
     pump_images();
 }
+
+int dmd_menu_bridge_s2all(void) { return s_bridge_s2all; }   // (the last hello's: kept while dmdext has the cable)
 
 bool dmd_menu_s2(int *w, int *h) {
     *w = s_s2[2];
