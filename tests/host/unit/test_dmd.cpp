@@ -735,6 +735,33 @@ int main() {
         CHECK(!dmd_scale2x_rows(big.data(), 256, DMD_MAX_H / 2 + 1, big.data()));   // too many rows
         CHECK(!dmd_scale2x_rows(nullptr, W, H, out.data()) && !dmd_scale2x_rows(in.data(), 0, H, out.data()));
     }
+    {   // Side bands: dmdext's "fit" of a narrower picture, 26 black columns each side (seen: a FP table)
+        const int W = 128, H = 32;
+        std::vector<uint32_t> pb(W * H, 0), st(W * H, 0xDEAD);
+        int cl = 0, ch = 0, c0 = 0, nc = 0;
+        CHECK(!dmd_lit_cols(pb.data(), W, H, &cl, &ch) && cl == -1 && ch == -1);
+        for (int r = 0; r < H; r++) { pb[r * W + 26] = 0x0000FF; pb[r * W + 101] = 0xFF0000; }
+        pb[5 * W + 60] = 0x00FF00;
+        CHECK(dmd_lit_cols(pb.data(), W, H, &cl, &ch) && cl == 26 && ch == 101);
+        dmd_pillar_cols(W, cl, ch, &c0, &nc);
+        CHECK(c0 == 26 && nc == 76);
+        dmd_pillar_cols(W, 30, 101, &c0, &nc);                                // off centre: the smaller margin
+        CHECK(c0 == 26 && nc == 76);
+        dmd_pillar_cols(W, 7, 120, &c0, &nc);                                 // under w/16: as it is
+        CHECK(c0 == 0 && nc == W);
+        dmd_pillar_cols(W, -1, -1, &c0, &nc);                                 // nothing lit yet
+        CHECK(c0 == 0 && nc == W);
+        CHECK(dmd_stretch_cols(pb.data(), W, H, c0 = 26, nc = 76, st.data()));
+        CHECK(st[0] == 0x0000FF && st[W - 1] == 0xFF0000);                    // the picture's edges at the DMD's
+        CHECK(st[10 * W] == 0x0000FF && st[10 * W + W - 1] == 0xFF0000);
+        bool mid = false;
+        for (int c = 0; c < W; c++) mid = mid || (st[5 * W + c] >> 8 & 255) > 0;
+        CHECK(mid);                                                           // the dot inside: still there
+        std::vector<uint32_t> same(W * H);
+        CHECK(dmd_stretch_cols(pb.data(), W, H, 0, W, same.data()) && same == pb);   // all columns: unchanged
+        CHECK(!dmd_stretch_cols(pb.data(), W, H, 100, 40, st.data()));        // past the frame
+        CHECK(!dmd_stretch_cols(pb.data(), W, H, 0, W, pb.data()));           // in place
+    }
     {   // Rebuilt DMD: a 128x16 DMD centred in 128x32 is rebuilt 4x, a full one 2x
         const int W = 16, H = 32;
         std::vector<uint32_t> in(W * H, 0), out(W * H * 2, 0xDEAD), tmp(W * H * 2);

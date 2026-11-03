@@ -89,6 +89,13 @@ cards show them); the dots stay true circles (or squares) in all of them.
 - **Full-screen DMD** (the rebuilt DMD, fit 6): the whole panel with no gaps. A 4:1 picture on a 1.7:1 panel
   must grow ~2.3x in height: the rows are rebuilt with Scale2x (32 -> 64, a 128x16 DMD 16 -> 64), the rest
   only spaces the dot rows out: round 8 px dots, rows 9-10 px apart, 128x64 dots over all 1024x600.
+- **Side bands off** (full-screen, stretched and tall DMD, a PC's frames only): a DMD that is not 4:1 (some
+  Future Pinball tables, a 192x64 one over USB) reaches the ZeDMD from dmdext's `resize = fit` as a narrower
+  picture between black columns (seen: 26 a side, 76 of 128 lit). The board keeps the columns each game
+  lights; after 8 s of its frames, when the same black margin of at least w/16 has stayed dark on both sides,
+  it stretches the picture over the whole width (each dot from the two nearest columns). Never a lit column
+  off; something lit in the margin later widens it again. Classic DMD and the fits in a window keep the bands
+  (the true shape). `dmd_lit_cols` / `dmd_pillar_cols` / `dmd_stretch_cols` in `dmd_core`.
 - **Classic DMD** (default): square cells, the largest integer size that fits, centred: 128x32 and 128x16 →
   8 px (1024x256), 192x64 → 5 px, 256x64 → 4 px; ambient bands above and below.
 - **Tall DMD**: the whole width and 320 px tall (a little more than the 4:1 picture), bands above and below.

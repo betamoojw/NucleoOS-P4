@@ -314,6 +314,19 @@ void dmd_rebuild_rows(int h, int lit_lo, int lit_hi, int *r0, int *n);
 // Lit rows of px (w x h): the first and the last row with any dot on; false when it is all black.
 bool dmd_lit_rows(const uint32_t *px, int w, int h, int *lo, int *hi);
 
+// ---- Side bands: a picture narrower than the DMD
+// dmdext's "resize = fit" puts a DMD that is not 4:1 (a Future Pinball table's, a 192x64 one) into the 128x32
+// of a ZeDMD centred between black columns. The fits that fill the panel's width take those columns away.
+// Lit columns of px (w x h): the first and the last column with any dot on; false when it is all black.
+bool dmd_lit_cols(const uint32_t *px, int w, int h, int *lo, int *hi);
+// The columns holding the picture, from the columns lit so far (lit_lo..lit_hi, -1 = none yet): [c0, c0 + n),
+// the same black margin off both sides (dmdext centres the picture) when it is at least w / 16 wide, else all
+// of them (c0 0, n w). Never a lit column off.
+void dmd_pillar_cols(int w, int lit_lo, int lit_hi, int *c0, int *n);
+// Columns [c0, c0 + n) of px stretched over the whole width w, into dst (w x h, not px): each dot from the two
+// nearest columns, weighted by how near. False on bad input (dst untouched).
+bool dmd_stretch_cols(const uint32_t *px, int w, int h, int c0, int n, uint32_t *dst);
+
 // ---- Ambient bands: the light the DMD throws above and below it
 // For the fits that leave black bands ("DMD only", "Tall DMD"): per panel column (after rotation: w columns,
 // or h when rot is odd), the colour the DMD throws on the band above (from its upper half) and below (its

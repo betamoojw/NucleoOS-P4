@@ -410,7 +410,7 @@ Las disposiciones, en el orden en que aparecen las vistas previas:
 | Disposición | Qué hace |
 |---|---|
 | **Automática** | Cada mesa con su mejor disposición según sus imágenes: Arte con ventana si tiene FullDMD, Backglass con hueco si tiene rejilla, si no DMD clásico. Un DMD 128x16 recibe DMD a pantalla completa (filas reconstruidas). |
-| **DMD a pantalla completa** | Toda la pantalla sin huecos: las filas se reconstruyen (128x64) y los puntos quedan redondos y grandes. |
+| **DMD a pantalla completa** | Toda la pantalla sin huecos: las filas se reconstruyen (128x64) y los puntos quedan redondos y grandes. Si el DMD de la mesa no es 4:1 (algunas mesas de Future Pinball) y dmdext lo envía con bandas negras a los lados, a los 8 segundos la placa las quita y ensancha la imagen a todo el ancho. |
 | **DMD clásico** | Puntos cuadrados y las proporciones reales, lo más grandes posible; franjas arriba y abajo. |
 | **DMD alto** | El DMD a todo el ancho y un poco más alto; franjas arriba y abajo. |
 | **DMD estirado** | Toda la pantalla con los puntos originales: la imagen se estira, los puntos quedan pequeños y las filas separadas. |

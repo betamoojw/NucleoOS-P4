@@ -407,7 +407,7 @@ The layouts, in the order the previews show them:
 | Layout | What it does |
 |---|---|
 | **Automatic** | Each table its best layout, from the pictures it has: Art with window with its FullDMD art, Backglass with housing with its grill, else Classic DMD. A 128x16 DMD gets Full-screen DMD (rows rebuilt). |
-| **Full-screen DMD** | The whole screen with no gaps: the rows are rebuilt (128x64) and the dots stay round and large. |
+| **Full-screen DMD** | The whole screen with no gaps: the rows are rebuilt (128x64) and the dots stay round and large. When the table's DMD is not 4:1 (some Future Pinball tables) and dmdext sends it with black bands at the sides, after 8 seconds the board takes them off and widens the picture to the full width. |
 | **Classic DMD** | Square dots and the true proportions, as large as they fit; bands above and below. |
 | **Tall DMD** | The DMD across the whole width and a little taller; bands above and below. |
 | **Stretched DMD** | The whole screen with the original dots: the picture is stretched, the dots stay small and the rows far apart. |

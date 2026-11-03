@@ -408,7 +408,7 @@ Le disposizioni, nell'ordine in cui compaiono le anteprime:
 | Disposizione | Cosa fa |
 |---|---|
 | **Automatica** | Per ogni tavolo la migliore per le immagini che ha: Grafica con finestra se ha la grafica FullDMD, Backglass con alloggio se ha la griglia, altrimenti DMD classico. Un DMD 128x16 prende DMD a tutto schermo (righe ricostruite). |
-| **DMD a tutto schermo** | Tutto lo schermo senza vuoti: le righe sono ricostruite (128x64) e i puntini restano tondi e grandi. |
+| **DMD a tutto schermo** | Tutto lo schermo senza vuoti: le righe sono ricostruite (128x64) e i puntini restano tondi e grandi. Se il DMD del tavolo non è 4:1 (alcuni tavoli Future Pinball) e dmdext lo manda con le bande nere ai lati, dopo 8 secondi la scheda le toglie e allarga l'immagine a tutta la larghezza. |
 | **DMD classico** | Puntini quadrati e proporzioni vere, il più grandi possibile; fasce sopra e sotto. |
 | **DMD alto** | Il DMD su tutta la larghezza e un po' più alto; fasce sopra e sotto. |
 | **DMD stirato** | Tutto lo schermo con i punti originali: la figura si allarga, i puntini restano piccoli e le righe distanti. |

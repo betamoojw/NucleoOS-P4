@@ -415,7 +415,7 @@ Les dispositions, dans l'ordre des aperçus :
 | Disposition | Ce qu'elle fait |
 |---|---|
 | **Automatique** | Pour chaque table la meilleure disposition selon ses images : Décor avec fenêtre s'il a le FullDMD, Backglass avec logement s'il a la grille, sinon DMD classique. Un DMD 128x16 prend DMD plein écran (lignes reconstruites). |
-| **DMD plein écran** | Tout l'écran sans vide : les lignes sont reconstruites (128x64) et les points restent ronds et grands. |
+| **DMD plein écran** | Tout l'écran sans vide : les lignes sont reconstruites (128x64) et les points restent ronds et grands. Si le DMD de la table n'est pas en 4:1 (certaines tables Future Pinball) et que dmdext l'envoie avec des bandes noires sur les côtés, au bout de 8 secondes la carte les retire et élargit l'image à toute la largeur. |
 | **DMD classique** | Points carrés et vraies proportions, aussi grands que possible ; bandes en haut et en bas. |
 | **DMD haut** | Le DMD sur toute la largeur et un peu plus haut ; bandes en haut et en bas. |
 | **DMD étiré** | Tout l'écran avec les points d'origine : l'image s'étire, les points restent petits et les lignes espacées. |

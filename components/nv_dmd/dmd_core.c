@@ -1291,6 +1291,66 @@ bool dmd_lit_rows(const uint32_t *px, int w, int h, int *lo, int *hi) {
     return a >= 0;
 }
 
+// ================================================================== side bands
+
+bool dmd_lit_cols(const uint32_t *px, int w, int h, int *lo, int *hi) {
+    int a = -1, b = -1;
+    for (int r = 0; px && r < h; r++) {
+        const uint32_t *row = px + (size_t)r * (size_t)w;
+        int c = 0;
+        while (c < w && !row[c]) c++;
+        if (c == w) continue;
+        if (a < 0 || c < a) a = c;
+        int e = w - 1;
+        while (!row[e]) e--;
+        if (e > b) b = e;
+    }
+    *lo = a;
+    *hi = b;
+    return a >= 0;
+}
+
+void dmd_pillar_cols(int w, int lit_lo, int lit_hi, int *c0, int *n) {
+    const int m = lit_lo < 0 || lit_hi < lit_lo ? 0 : lit_lo < w - 1 - lit_hi ? lit_lo : w - 1 - lit_hi;
+    if (w >= 16 && m >= w / 16) {
+        *c0 = m;
+        *n = w - 2 * m;
+    } else {
+        *c0 = 0;
+        *n = w;
+    }
+}
+
+bool dmd_stretch_cols(const uint32_t *px, int w, int h, int c0, int n, uint32_t *dst) {
+    if (!px || !dst || px == dst || w < 1 || h < 1 || w > DMD_MAX_W || (size_t)w * (size_t)h > DMD_MAX_PX || c0 < 0 ||
+        n < 1 || c0 + n > w)
+        return false;
+    int16_t src[DMD_MAX_W];
+    uint8_t wgt[DMD_MAX_W];   // of the next column, 0..255
+    for (int x = 0; x < w; x++) {   // the centre of each new dot on the old columns, in 1/256
+        int s = (int)(((2 * x + 1) * n * 128) / w) - 128;
+        if (s < 0) s = 0;
+        if (s > (n - 1) * 256) s = (n - 1) * 256;
+        src[x] = (int16_t)(c0 + (s >> 8));
+        wgt[x] = (uint8_t)(s & 255);
+    }
+    for (int r = 0; r < h; r++) {
+        const uint32_t *row = px + (size_t)r * (size_t)w;
+        uint32_t *out = dst + (size_t)r * (size_t)w;
+        for (int x = 0; x < w; x++) {
+            const uint32_t a = row[src[x]];
+            const int f = wgt[x];
+            if (!f) { out[x] = a; continue; }
+            const uint32_t b = row[src[x] + 1];
+            const uint32_t rr = (((a >> 16 & 255) * (uint32_t)(256 - f) + (b >> 16 & 255) * (uint32_t)f) >> 8);
+            const uint32_t gg = (((a >> 8 & 255) * (uint32_t)(256 - f) + (b >> 8 & 255) * (uint32_t)f) >> 8);
+            const uint32_t bb = (((a & 255) * (uint32_t)(256 - f) + (b & 255) * (uint32_t)f) >> 8);
+            out[x] = rr << 16 | gg << 8 | bb;
+        }
+    }
+    return true;
+}
+
 // ================================================================== ambient bands
 
 // in -> out (n columns): each channel averaged over [c - rad, c + rad] (the edges count what they have)

@@ -130,6 +130,18 @@ NV_PSRAM_BSS size_t s_px2_cap = 0;               // values each holds
 NV_PSRAM_BSS int s_lit_lo = -1, s_lit_hi = -1;
 NV_PSRAM_BSS int s_lit_gid = -1;    // the game they belong to (only another game resets them)
 NV_PSRAM_BSS bool s_rb_on = true;   // the running table rebuilds a 128x16 DMD (per table, "dmdrb_<id>")
+// Columns lit since the game started (the layer's draw keeps them; tick asks for a reset with another game, a
+// frame of another size resets them too): a DMD that is not 4:1 reaches a ZeDMD as a narrower picture between
+// black columns (dmdext's "resize = fit"). The fits that fill the panel's width (s_wide: rebuilt, stretched,
+// tall, with a PC's frames) stretch the picture over them, once the game has shown kSideUs of frames: by then
+// what it lights has reached the picture's edges, so the bands are known and the picture does not jump.
+NV_PSRAM_BSS int s_col_lo = -1, s_col_hi = -1, s_col_w = 0, s_col_h = 0;
+NV_PSRAM_BSS int64_t s_col_t0 = 0;               // the first lit frame of them (display side only)
+NV_PSRAM_BSS volatile bool s_col_reset = false;  // tick: another game
+NV_PSRAM_BSS volatile bool s_wide = false;       // set by the display task every round
+NV_PSRAM_BSS uint32_t *s_pxc = nullptr;          // the stretched frame (heap, PSRAM, w*h values, while needed)
+NV_PSRAM_BSS size_t s_pxc_cap = 0;
+constexpr int64_t kSideUs = 8 * 1000 * 1000;
 // The running table's dots ("dmddot_<id>"): bit 0 original (square, whole pixels, never stretched), bits 1-2
 // a margin of 0-3 rows and columns of unlit dots around the DMD. s_mg: the margin the layer draws now (the
 // display task sets it with the geometry), s_pxm: the frame with that margin (heap, while needed).
@@ -475,6 +487,20 @@ uint32_t layer_draw(void *, uint16_t *fb, int stride, bool fresh) {
             if (s_lit_lo < 0 || lo < s_lit_lo) s_lit_lo = lo;
             if (hi > s_lit_hi) s_lit_hi = hi;
         }
+        if (!test) {   // and the columns (side bands)
+            if (s_col_reset || w != s_col_w || h != s_col_h) {
+                s_col_reset = false;
+                s_col_w = w;
+                s_col_h = h;
+                s_col_lo = s_col_hi = -1;
+                s_col_t0 = 0;
+            }
+            if (dmd_lit_cols(px, w, h, &lo, &hi)) {
+                if (s_col_lo < 0 || lo < s_col_lo) s_col_lo = lo;
+                if (hi > s_col_hi) s_col_hi = hi;
+                if (!s_col_t0) s_col_t0 = esp_timer_get_time();
+            }
+        }
         if (!test && gen == s_tint_gen && s_tint && (size_t)w * (size_t)h <= DMD_MAX_PX) {   // a colour chosen on it
             if (s_tint_ok == gen || tint_frame(px, (size_t)w * (size_t)h, s_tint_from, s_tint_to, s_tint)) {
                 s_tint_ok = gen;
@@ -482,6 +508,12 @@ uint32_t layer_draw(void *, uint16_t *fb, int stride, bool fresh) {
             } else {
                 s_tint_gen = 0;   // not a gray frame: as it is
             }
+        }
+        if (!test && s_wide && s_pxc && (size_t)w * (size_t)h <= s_pxc_cap && s_col_t0 &&
+            esp_timer_get_time() - s_col_t0 >= kSideUs) {   // dmdext's side bands: the picture over them
+            int c0, nc;
+            dmd_pillar_cols(w, s_col_lo, s_col_hi, &c0, &nc);
+            if (nc < w && dmd_stretch_cols(px, w, h, c0, nc, s_pxc)) px = s_pxc;
         }
         int r0 = 0, n = h;
         if (!test && s_rb_on) dmd_rebuild_rows(h, s_lit_lo, s_lit_hi, &r0, &n);   // a 128x16 DMD: its 16 rows
@@ -582,6 +614,7 @@ void disp_task(void *) {
     int fit_used = -1;
     uint32_t win_used = 0;
     int why_shown = -1;   // the last reason logged for the DMD not on screen (only changes are logged)
+    bool wide_fit = false;   // the attached fit fills the panel's width (see s_wide)
     while (s_run) {
         const bool fresh = nv_dmd_wait(50);
         if (!s_run) break;
@@ -660,6 +693,12 @@ void disp_task(void *) {
                 s_pxm_cap = s_pxm ? mcap : 0;
             }
             if (m && !s_pxm_cap) dot &= 1;
+            wide_fit = !clock && !test && (x2 || fit == DMD_FIT_FILL || fit == kFitTall);
+            if (wide_fit && (size_t)fw * (size_t)fh > s_pxc_cap) {   // detached: no draw running
+                heap_caps_free(s_pxc);
+                s_pxc = (uint32_t *)heap_caps_malloc((size_t)fw * (size_t)fh * 4, MALLOC_CAP_SPIRAM);
+                s_pxc_cap = s_pxc ? (size_t)fw * (size_t)fh : 0;
+            }
             const bool ok = geom_for(x2 || fit != kFitRebuilt ? fit : DMD_FIT_SQUARE, fw, fh, rot, dot, win, &g);
             if (!ok) {
                 s_big_w = fw;
@@ -704,7 +743,10 @@ void disp_task(void *) {
             test_gen = s_test_gen;
             nv_disp_layer_update();
         }
+        // a PC's frames: the board's own pictures (the clock, the score displays) are drawn as they are
+        s_wide = wide_fit && strcmp(st.fmt, "clock") && strcmp(st.fmt, "score");
     }
+    s_wide = false;
     if (attached) nv_disp_layer_set(nullptr);
     amb_free();
     strips_free();
@@ -717,6 +759,9 @@ void disp_task(void *) {
     heap_caps_free(s_pxm);
     s_pxm = nullptr;
     s_pxm_cap = 0;
+    heap_caps_free(s_pxc);
+    s_pxc = nullptr;
+    s_pxc_cap = 0;
     s_mg = 0;
     s_geom = {};
     s_showing = false;
@@ -1172,6 +1217,7 @@ void tick(lv_timer_t *) {
     if (gid != s_lit_gid) {   // another game: the rebuilt DMD learns its lit rows again
         s_lit_gid = gid;
         s_lit_lo = s_lit_hi = -1;
+        s_col_reset = true;   // (the draw resets the columns: their time is not tick's to write)
     }
     if (gid != s_fit_gid) {   // another game, or its settings changed: read again
         s_fit_gid = gid;

@@ -413,7 +413,7 @@ Die Anordnungen, in der Reihenfolge der Vorschauen:
 | Anordnung | Was sie tut |
 |---|---|
 | **Automatisch** | Jeder Tisch seine beste Anordnung nach seinen Bildern: Grafik mit Fenster mit FullDMD, Backglass mit Aussparung mit Gitter, sonst klassischer DMD. Ein 128x16-DMD bekommt DMD bildschirmfüllend (Zeilen rekonstruiert). |
-| **DMD bildschirmfüllend** | Der ganze Bildschirm ohne Lücken: Die Zeilen werden rekonstruiert (128x64), die Punkte bleiben rund und groß. |
+| **DMD bildschirmfüllend** | Der ganze Bildschirm ohne Lücken: Die Zeilen werden rekonstruiert (128x64), die Punkte bleiben rund und groß. Ist das DMD des Tisches nicht 4:1 (manche Future-Pinball-Tische) und schickt dmdext es mit schwarzen Balken an den Seiten, entfernt die Platine sie nach 8 Sekunden und zieht das Bild auf die volle Breite. |
 | **Klassischer DMD** | Quadratische Punkte und echte Proportionen, so groß wie möglich; Streifen oben und unten. |
 | **Hoher DMD** | Der DMD über die ganze Breite und etwas höher; Streifen oben und unten. |
 | **Gestreckter DMD** | Der ganze Bildschirm mit den Original-Punkten: Das Bild wird gestreckt, die Punkte bleiben klein, die Zeilen weit auseinander. |
