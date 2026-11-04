@@ -48,7 +48,7 @@ No Linux, no Android: NucleoOS is its own operating system, written for a microc
   Code or Cursor through MCP. API keys are sealed to the chip and never leave it.
 - **A desktop in your browser, served by the board itself**: about 40 windowed apps (files,
   spreadsheet, SSH, mail, AI chat and multi-agent builders, a DJ mixer, dictation), an AI command
-  bar on Ctrl+Space, and installation as a PWA.
+  bar on Ctrl+Space, and installation as a PWA. Also in **Simplified Chinese (简体中文)**.
 - **An App Store with over 400 signed apps and games**: whole consoles (WASM-4, Game Boy, Arduboy,
   CHIP-8), Doom, ScummVM, LÖVE, interactive fiction, programming languages, office and smart-home
   apps. WebAssembly compiled ahead of time to native RISC-V code.
@@ -258,7 +258,8 @@ the pairing.
 - **Signed OTA updates** from GitHub with a primary and an offline backup key, a beta channel, a
   recovery app, a safe mode and a last-known-good copy in flash. Updates are staged on the SD card.
 - **5 languages** (English, Italian, Spanish, French, German) and **offline text-to-speech** in
-  Italian and English.
+  Italian and English. The desktop in your browser also speaks **Simplified Chinese (简体中文)**: pick
+  it in the web Settings ▸ Appearance ▸ Language; the board's own screen stays in English underneath.
 - **Hardware acceleration**: the JPEG codec, the PPA for scaling and rotation, and a
   double-buffered display with vsync. Apps get them too: hardware JPEG decoding and a canvas turned
   by the PPA (ABI 19).

@@ -204,11 +204,11 @@
  ],
  "apps_dir": "apps",
  "base": "/",
- "bytes": 31297886,
+ "bytes": 31911521,
  "caps_row": {
   "since": "1.2.118"
  },
- "commit": "ff8f2578a4466418d9278fb660b64f514ec87b8d",
+ "commit": "96949959550483ed884510627863abd077fd5e1c",
  "edition": "p4",
  "externals": [
   {
@@ -523,11 +523,11 @@
    "why": "unRAR license is not free software: out until verified (external-resources.json)"
   }
  ],
- "files": 1381,
+ "files": 1468,
  "format": 1,
  "generator": "nucleo-webos tools/build.py",
- "gz_twins": 628,
- "hash": "f24cb997d414b8701586f9c6581d237644e7d514af197e9b1541d69650b5f4cc",
+ "gz_twins": 671,
+ "hash": "0cbc70e515b550bfe00c843b91215d036ebf47d0693a564a0f15f43a322a2b2f",
  "left_out": [
   {
    "id": "cast",
@@ -609,16 +609,16 @@
   "channel metadata: read by nucleoos-webapps-store's publishing tool": 2,
   "decoder sources and their build scripts (the built .wasm sits in www/)": 4,
   "git/npm metadata (.gitattributes, .npmignore...)": 2,
-  "p4 profile: a Store app (web channel, about 2 MB with pdf.js): installed from the Store, never built in": 17,
+  "p4 profile: a Store app (web channel, about 2 MB with pdf.js): installed from the Store, never built in": 18,
   "p4 profile: heavy runtime or model the app fetches from its CDN when it is not on the card (Vosk, WebLLM/wllama, ONNX); also kept out of the P4 repo, which commits sd/web": 10,
   "p4 profile: in-browser speech for ANIMA's own page, which the P4 does not list (its voice is on the device)": 1,
-  "p4 profile: not in the P4's app list (sd/web/apps.json): built, never shown": 26,
+  "p4 profile: not in the P4's app list (sd/web/apps.json): built, never shown": 29,
   "tests": 6
  },
  "profile_sha256": "1f68b9fa5f458ece4c6aeffe3cd99bde79ecbc24e72a2dac7c8ecd87041c85cc",
  "shell": {
-  "cache": "nucleo-shell-v163-6ec58c150250",
-  "hash": "6ec58c150250"
+  "cache": "nucleo-shell-v164-067b84e51cc5",
+  "hash": "067b84e51cc5"
  },
  "shell_dir": "",
  "uncommitted_files": 0,
