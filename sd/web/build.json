@@ -204,11 +204,11 @@
  ],
  "apps_dir": "apps",
  "base": "/",
- "bytes": 31914554,
+ "bytes": 31914578,
  "caps_row": {
   "since": "1.2.118"
  },
- "commit": "2a9712f5664714bb7d662ed266768d4356d45171",
+ "commit": "e9ac00dc38920c15a04b5234b4de35a1d82d7194",
  "edition": "p4",
  "externals": [
   {
@@ -527,7 +527,7 @@
  "format": 1,
  "generator": "nucleo-webos tools/build.py",
  "gz_twins": 672,
- "hash": "90f66d07553d4cd157d0669e048d3a724d30dde42d817d6024d68f365bc0aa2d",
+ "hash": "02cb1d5b5c699f4d3669c9737b2840482b383c780730600fac83fdc3f51f1100",
  "left_out": [
   {
    "id": "cast",
@@ -603,7 +603,7 @@
   "video-studio"
  ],
  "never_shipped": {
-  "app sources, tests and docs outside www/ (only manifest.json and www/ ship)": 13,
+  "app sources, tests and docs outside www/ (only manifest.json and www/ ship)": 14,
   "build metadata: decides which apps enter a build, never read at runtime": 44,
   "build scripts": 1,
   "channel metadata: read by nucleoos-webapps-store's publishing tool": 2,
@@ -617,8 +617,8 @@
  },
  "profile_sha256": "1f68b9fa5f458ece4c6aeffe3cd99bde79ecbc24e72a2dac7c8ecd87041c85cc",
  "shell": {
-  "cache": "nucleo-shell-v165-ed75a65f9206",
-  "hash": "ed75a65f9206"
+  "cache": "nucleo-shell-v166-817bf59cb1b1",
+  "hash": "817bf59cb1b1"
  },
  "shell_dir": "",
  "uncommitted_files": 0,

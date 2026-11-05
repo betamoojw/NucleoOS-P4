@@ -35,7 +35,7 @@ namespace plan = nv_content_plan;
 // (tools/dist.py refuses a firmware whose requirement the store doesn't meet).
 struct Required { const char *id; const char *min; };
 constexpr Required kRequired[] = {
-    {"sys-web", "2026.11.2"},   // 1.2.197: web OS from nucleo-webos 2a9712f (webos.lock): Simplified Chinese in the browser
+    {"sys-web", "2026.11.3"},   // next release: web OS from nucleo-webos e9ac00d (webos.lock): ANIMA understands "PC models"
 };
 
 constexpr char kQueue[]      = "/sdcard/nucleos/content/queue";
